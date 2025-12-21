@@ -1,12 +1,18 @@
 # fastimage - fast image info for go
 
-[![godoc][godoc-img]][godoc] [![release][release-img]][release] [![goreport][goreport-img]][goreport] [![coverage][coverage-img]][coverage]
+fastimage is a tiny Go helper that sniffs image headers to extract dimensions without
+fully decoding the file, keeping it lightweight and suitable for hot paths like upload
+validation, image proxies, or metadata indexing pipelines.
+
+This is a fork of [github.com/rubenfonseca/fastimage](https://github.com/rubenfonseca/fastimage) with added AVIF support.
+
+Big thanks and deep respect to @rubenfonseca, author of the original repo.
 
 ## Features
 
-* Zero Dependencies - no std/3rd imports
-* High Performance - hand-wringing DFA instead of regex/wildcard expression
-* Widely Format - bmp/bpm/gif/jpeg/mng/pbm/pcx/pgm/png/ppm/psd/ras/tiff/webp/xbm/xpm
+* Zero Dependencies - core library has no imports
+* High Performance - hand-written header parsing (no regex/wildcard)
+* Widely Format - bmp/bpm/gif/jpeg/mng/pbm/pcx/pgm/png/ppm/psd/ras/tiff/webp/xbm/xpm/avif
 
 ### Getting Started
 
@@ -38,12 +44,3 @@ $ go get github.com/phuslu/fastimage/cmd/fastimage
 $ fastimage banner.png
 png image/png 320 50
 ```
-
-[godoc-img]: http://img.shields.io/badge/godoc-reference-blue.svg
-[godoc]: https://godoc.org/github.com/phuslu/fastimage
-[release-img]: https://img.shields.io/github/v/tag/phuslu/fastimage?label=release
-[release]: https://github.com/phuslu/fastimage/releases
-[goreport-img]: https://goreportcard.com/badge/github.com/phuslu/fastimage
-[goreport]: https://goreportcard.com/report/github.com/phuslu/fastimage
-[coverage-img]: http://gocover.io/_badge/github.com/phuslu/fastimage
-[coverage]: https://gocover.io/github.com/phuslu/fastimage

@@ -28,6 +28,7 @@ func TestTypeString(t *testing.T) {
 		{XBM, "xbm"},
 		{XPM, "xpm"},
 		{XV, "xv"},
+		{AVIF, "avif"},
 	}
 
 	for _, c := range cases {
@@ -59,6 +60,7 @@ func TestTypeMime(t *testing.T) {
 		{XBM},
 		{XPM},
 		{XV},
+		{AVIF},
 	}
 
 	for _, c := range cases {
@@ -80,6 +82,7 @@ func TestGetType(t *testing.T) {
 		{"testdata/4_webp_ll.webp", WEBP},
 		{"testdata/pass-1_s.png", PNG},
 		{"testdata/pak38.gif", GIF},
+		{"testdata/test.gif", GIF},
 		{"testdata/xterm.bmp", BMP},
 		{"testdata/letter_N.ppm", PPM},
 		{"testdata/spacer50.xbm", XBM},
@@ -92,6 +95,9 @@ func TestGetType(t *testing.T) {
 		{"testdata/letter_T.mng", MNG},
 		{"testdata/letter_T.ras", RAS},
 		{"testdata/letter_T.pcx", PCX},
+		{"testdata/bridge.avif", AVIF},
+		{"testdata/cow.avif", AVIF},
+		{"testdata/parrot.avif", AVIF},
 	}
 
 	for _, c := range cases {
@@ -118,6 +124,7 @@ func TestGetInfo(t *testing.T) {
 		{"testdata/4_webp_ll.webp", Info{WEBP, 421, 163}},
 		{"testdata/pass-1_s.png", Info{PNG, 90, 60}},
 		{"testdata/pak38.gif", Info{GIF, 333, 194}},
+		{"testdata/test.gif", Info{GIF, 60, 40}},
 		{"testdata/xterm.bmp", Info{BMP, 64, 38}},
 		{"testdata/letter_N.ppm", Info{PPM, 66, 57}},
 		{"testdata/spacer50.xbm", Info{XBM, 50, 10}},
@@ -130,6 +137,9 @@ func TestGetInfo(t *testing.T) {
 		{"testdata/letter_T.mng", Info{MNG, 52, 54}},
 		{"testdata/letter_T.ras", Info{RAS, 52, 54}},
 		{"testdata/letter_T.pcx", Info{PCX, 52, 54}},
+		{"testdata/bridge.avif", Info{AVIF, 1000, 666}},
+		{"testdata/cow.avif", Info{AVIF, 500, 300}},
+		{"testdata/parrot.avif", Info{AVIF, 1000, 667}},
 	}
 
 	for _, c := range cases {
