@@ -1,6 +1,8 @@
 package fastimage
 
-import "io"
+import (
+	"io"
+)
 
 // GetInfoReader reads from r until it can determine the image info or EOF.
 func GetInfoReader(r io.Reader) (Info, error) {

@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 
@@ -15,16 +17,9 @@ func main() {
 	}
 
 	name := os.Args[1]
-	file, err := os.Open(name)
+	info, err := getInfo(name)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "open file error: %+v", err)
-		os.Exit(1)
-	}
-	defer file.Close()
-
-	info, err := fastimage.GetInfoReader(file)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "read file error: %+v", err)
+		fmt.Fprintf(os.Stderr, "read error: %+v", err)
 		os.Exit(1)
 	}
 	if info.Type == fastimage.Unknown {
@@ -32,4 +27,34 @@ func main() {
 	}
 
 	fmt.Printf("%s %s %d %d\n", info.Type, info.Type.Mime(), info.Width, info.Height)
+}
+
+func getInfo(name string) (fastimage.Info, error) {
+	if isHTTPURL(name) {
+		resp, err := http.Get(name)
+		if err != nil {
+			return fastimage.Info{}, err
+		}
+		defer resp.Body.Close()
+		if resp.StatusCode != http.StatusOK {
+			return fastimage.Info{}, fmt.Errorf("unexpected status %s", resp.Status)
+		}
+		return fastimage.GetInfoReader(resp.Body)
+	}
+
+	file, err := os.Open(name)
+	if err != nil {
+		return fastimage.Info{}, err
+	}
+	defer file.Close()
+
+	return fastimage.GetInfoReader(file)
+}
+
+func isHTTPURL(value string) bool {
+	parsed, err := url.Parse(value)
+	if err != nil {
+		return false
+	}
+	return parsed.Scheme == "http" || parsed.Scheme == "https"
 }
