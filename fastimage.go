@@ -189,7 +189,9 @@ func GetType(p []byte) Type {
 	return Unknown
 }
 
-// GetInfo detects a image info of data (minimum 80 bytes required).
+// GetInfo detects image info from the provided bytes. The buffer must contain
+// enough header data for the format. There is no fixed worst-case size because
+// JPEG dimensions can appear arbitrarily far into the file.
 func GetInfo(p []byte) (info Info) {
 	const minOffset = 80 // 1 pixel gif
 	if len(p) < minOffset {
@@ -417,6 +419,9 @@ func isAVIFBrand(b []byte) bool {
 func jpeg(b []byte, info *Info) {
 	i := 2
 	for {
+		if i+3 >= len(b) {
+			return
+		}
 		length := int(b[i+3]) | int(b[i+2])<<8
 		code := b[i+1]
 		marker := b[i]
@@ -425,12 +430,18 @@ func jpeg(b []byte, info *Info) {
 		case marker != 0xff:
 			return
 		case code >= 0xc0 && code <= 0xc3:
+			if i+4 >= len(b) {
+				return
+			}
 			info.Type = JPEG
 			info.Width = uint32(b[i+4]) | uint32(b[i+3])<<8
 			info.Height = uint32(b[i+2]) | uint32(b[i+1])<<8
 			return
 		default:
-			i += int(length) - 2
+			if length < 2 {
+				return
+			}
+			i += length - 2
 		}
 	}
 }
