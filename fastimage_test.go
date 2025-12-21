@@ -1,7 +1,7 @@
 package fastimage
 
 import (
-	"io/ioutil"
+	"os"
 	"testing"
 )
 
@@ -101,7 +101,7 @@ func TestGetType(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		data, err := ioutil.ReadFile(c.File)
+		data, err := os.ReadFile(c.File)
 		if err != nil {
 			t.Errorf("read file(%+v) error: %+v", c.File, err)
 		}
@@ -143,7 +143,7 @@ func TestGetInfo(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		data, err := ioutil.ReadFile(c.File)
+		data, err := os.ReadFile(c.File)
 		if err != nil {
 			t.Errorf("read file(%+v) error: %+v", c.File, err)
 		}

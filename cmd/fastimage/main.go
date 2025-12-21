@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/phuslu/fastimage"
+	"github.com/kotylevskiy/fastimage"
 )
 
 func main() {

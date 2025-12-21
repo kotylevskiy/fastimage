@@ -138,9 +138,9 @@ func (t Type) Mime() string {
 
 // Info holds the type and dismissons of an image
 type Info struct {
-	Type   Type
-	Width  uint32
-	Height uint32
+	Type   Type   `json:"type"`
+	Width  uint32 `json:"width"`
+	Height uint32 `json:"height"`
 }
 
 // GetType detects a image info of data (minimum 80 bytes required).
@@ -360,7 +360,8 @@ func hasAVIFFtyp(b []byte) bool {
 		size32 := bigEndian.Uint32(b[i : i+4])
 		size := int(size32)
 		header := 8
-		if size32 == 1 {
+		switch size32 {
+		case 1:
 			if i+16 > len(b) {
 				return false
 			}
@@ -370,7 +371,7 @@ func hasAVIFFtyp(b []byte) bool {
 			}
 			size = int(size64)
 			header = 16
-		} else if size32 == 0 {
+		case 0:
 			size = len(b) - i
 		}
 		if size < header {
