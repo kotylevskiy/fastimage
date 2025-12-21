@@ -1,3 +1,3 @@
-module github.com/phuslu/fastimage
+module github.com/kotylevskiy/fastimage
 
 go 1.25

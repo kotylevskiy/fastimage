@@ -6,7 +6,7 @@ validation, image proxies, or metadata indexing pipelines.
 
 This is a fork of [github.com/rubenfonseca/fastimage](https://github.com/rubenfonseca/fastimage) with added AVIF support.
 
-Big thanks and deep respect to @rubenfonseca, author of the original repo.
+Big thanks and deep respect to [@rubenfonseca](https://github.com/rubenfonseca), author of the original repo.
 
 ## Features
 
