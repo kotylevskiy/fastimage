@@ -1,19 +1,50 @@
 # fastimage - fast image info for go
+[![Go Reference](https://pkg.go.dev/badge/github.com/kotylevskiy/fastimage.svg)](https://pkg.go.dev/github.com/kotylevskiy/fastimage) 
+[![Go Report Card](https://goreportcard.com/badge/github.com/kotylevskiy/fastimage)](https://goreportcard.com/report/github.com/kotylevskiy/fastimage)
 
 fastimage is a tiny Go helper that sniffs image headers to extract dimensions without
 fully decoding the file, keeping it lightweight and suitable for hot paths like upload
 validation, image proxies, or metadata indexing pipelines. It also includes HTTP
 helpers for remote image probing via progressive range requests.
 
-This is a fork of [github.com/rubenfonseca/fastimage](https://github.com/rubenfonseca/fastimage) with added AVIF support. Big thanks and deep respect to [@rubenfonseca](https://github.com/rubenfonseca), author of the original repo.
+Typical use-cases:
+
+* Validate user image uploads (type + size) without decoding the full image
+* Implement lightweight image proxies / thumbnailers
+* Crawl and index image metadata at scale
+* Quickly check remote banner images / avatars in microservices
+
+
+## Differences from upstream
+
+This repo started as a fork of [rubenfonseca/fastimage](https://github.com/rubenfonseca/fastimage) and adds:
+
+* AVIF support
+* HTTP helpers for concurrent, range-based remote image probing
+* Stream-aware `GetInfoReader` API for working with `io.Reader`
+
+Big thanks and deep respect to [@rubenfonseca](https://github.com/rubenfonseca), author of the original repo.
 
 ## Features
 
 * Zero Dependencies - stdlib only
 * High Performance - hand-written header parsing (no regex/wildcard)
-* Widely Format - bmp/bpm/gif/jpeg/mng/pbm/pcx/pgm/png/ppm/psd/ras/tiff/webp/xbm/xpm/avif
-* HTTP Helpers - progressive range fetching for remote images
+* Wide format support – BMP, GIF, JPEG, MNG, PBM, PCX, PGM, PNG, PPM, PSD, RAS, TIFF, WebP, XBM, XPM, AVIF
+* HTTP range helpers – progressive range fetching for remote images
 * Reader API - stream-aware `GetInfoReader` for files or network responses
+
+## Install
+
+Library (modules will fetch it automatically when you import):
+
+```go
+import "github.com/kotylevskiy/fastimage"
+```
+CLI:
+
+```bash
+go install github.com/kotylevskiy/fastimage/cmd/fastimage@latest
+```
 
 ### Getting Started
 
