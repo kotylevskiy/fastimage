@@ -33,7 +33,6 @@ type HTTPImageInfo struct {
 // GetHTTPImageResult contains image metadata or an error for a given URL.
 type GetHTTPImageResult struct {
 	HTTPImageInfo
-	// Error describes a fetch or parse failure.
 	Error error `json:"error,omitempty"`
 }
 
@@ -48,11 +47,29 @@ type GetHTTPImageOptions struct {
 }
 
 // GetHTTPImageInfo fetches basic image metadata for a list of URLs using default options.
+//
+// Errors:
+//   - context.Canceled or context.DeadlineExceeded if the context ends.
+//   - *url.Error from url.Parse or for invalid URLs.
+//   - http.Client transport errors from http.Client.Do.
+//   - io.ReadAll errors while reading the response body.
+//   - *HTTPStatusError for non-200/206 responses.
+//   - *RetryAfterError for 429/503 responses with parseable Retry-After.
+//   - *InsufficientBytesError when there is not enough data to detect image info.
 func GetHTTPImageInfo(ctx context.Context, urls []string) []GetHTTPImageResult {
 	return GetHTTPImageDataWithOptions(ctx, urls, GetHTTPImageOptions{})
 }
 
 // GetHTTPImageDataWithOptions fetches basic image metadata for a list of URLs using custom options.
+//
+// Errors:
+//   - context.Canceled or context.DeadlineExceeded if the context ends.
+//   - *url.Error from url.Parse or for invalid URLs.
+//   - http.Client transport errors from http.Client.Do.
+//   - io.ReadAll errors while reading the response body.
+//   - *HTTPStatusError for non-200/206 responses.
+//   - *RetryAfterError for 429/503 responses with parseable Retry-After.
+//   - *InsufficientBytesError when there is not enough data to detect image info.
 func GetHTTPImageDataWithOptions(ctx context.Context, urls []string, options GetHTTPImageOptions) []GetHTTPImageResult {
 	sizes := []int64{1024, 4096, 16384, 65536, 262144}
 
@@ -80,7 +97,7 @@ func GetHTTPImageDataWithOptions(ctx context.Context, urls []string, options Get
 		parsed, err := url.Parse(rawURL)
 		if err != nil || parsed.Scheme == "" || parsed.Host == "" {
 			if err == nil {
-				err = fmt.Errorf("invalid url")
+				err = &url.Error{Op: "parse", URL: rawURL, Err: fmt.Errorf("invalid URL")}
 			}
 			results[i].Error = err
 			continue
@@ -231,13 +248,19 @@ func fetchImageInfoProgressive(
 ) (Info, time.Duration, error) {
 	var info Info
 	var lastErr error
+	lastRead := 0
+
 	for _, size := range sizes {
 		if size < 80 {
 			continue
 		}
 		var retryAfter time.Duration
 		var needMore bool
-		info, retryAfter, lastErr, needMore = fetchImageInfoOnce(ctx, client, rawURL, size, originLimiter)
+		var readBytes int
+		info, retryAfter, lastErr, needMore, readBytes = fetchImageInfoOnce(ctx, client, rawURL, size, originLimiter)
+		if readBytes > 0 {
+			lastRead = readBytes
+		}
 		if retryAfter > 0 {
 			return info, retryAfter, lastErr
 		}
@@ -248,8 +271,11 @@ func fetchImageInfoProgressive(
 			return info, 0, nil
 		}
 	}
+
 	if lastErr == nil {
-		lastErr = fmt.Errorf("insufficient bytes to detect image info")
+		// We tried all sizes but still couldn't detect enough header/dimensions.
+		// Treat as insufficient bytes for detection.
+		lastErr = &InsufficientBytesError{Got: lastRead, Min: 80}
 	}
 	return info, 0, lastErr
 }
@@ -260,47 +286,60 @@ func fetchImageInfoOnce(
 	rawURL string,
 	minBytes int64,
 	originLimiter *originLimiter,
-) (Info, time.Duration, error, bool) {
+) (Info, time.Duration, error, bool, int) {
 	var info Info
+
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, rawURL, nil)
 	if err != nil {
-		return info, 0, err, false
+		return info, 0, err, false, 0
 	}
 	req.Header.Set("Range", fmt.Sprintf("bytes=0-%d", minBytes-1))
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return info, 0, err, false
+		return info, 0, err, false, 0
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode == http.StatusTooManyRequests || resp.StatusCode == http.StatusServiceUnavailable {
 		if retryAfter, ok := parseRetryAfter(resp.Header.Get("Retry-After")); ok {
-			return info, retryAfter, fmt.Errorf("retry after %s", resp.Status), false
+			return info, retryAfter, &RetryAfterError{
+				URL:        rawURL,
+				StatusCode: resp.StatusCode,
+				Status:     resp.Status,
+				RetryAfter: retryAfter,
+			}, false, 0
 		}
 	}
+
 	if resp.StatusCode == http.StatusPartialContent {
 		originLimiter.enableReusable()
 	}
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusPartialContent {
-		return info, 0, fmt.Errorf("unexpected status %s", resp.Status), false
+		return info, 0, &HTTPStatusError{
+			URL:        rawURL,
+			StatusCode: resp.StatusCode,
+			Status:     resp.Status,
+		}, false, 0
 	}
 
 	data, err := io.ReadAll(io.LimitReader(resp.Body, minBytes))
 	if err != nil {
-		return info, 0, err, false
+		return info, 0, err, false, 0
 	}
-	if len(data) < 80 {
-		return info, 0, fmt.Errorf("insufficient bytes: %d", len(data)), false
+
+	readBytes := len(data)
+	if readBytes < 80 {
+		return info, 0, &InsufficientBytesError{Got: readBytes, Min: 80}, false, readBytes
 	}
 
 	info = GetInfo(data)
 	if info.Type == Unknown || info.Width == 0 || info.Height == 0 {
-		return info, 0, nil, true
+		return info, 0, nil, true, readBytes
 	}
 
-	return info, 0, nil, false
+	return info, 0, nil, false, readBytes
 }
 
 func parseRetryAfter(value string) (time.Duration, bool) {

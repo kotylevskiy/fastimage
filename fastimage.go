@@ -143,7 +143,9 @@ type Info struct {
 	Height uint32 `json:"height"`
 }
 
-// GetType detects a image info of data (minimum 80 bytes required).
+// GetType detects an image type from the provided bytes.
+// Unknown is a normal outcome and means there is insufficient data, not invalid data.
+// Callers should retry with more bytes if they need a definitive type.
 func GetType(p []byte) Type {
 	const minOffset = 80 // 1 pixel gif
 	if len(p) < minOffset {
@@ -189,9 +191,10 @@ func GetType(p []byte) Type {
 	return Unknown
 }
 
-// GetInfo detects image info from the provided bytes. The buffer must contain
-// enough header data for the format. There is no fixed worst-case size because
-// JPEG dimensions can appear arbitrarily far into the file.
+// GetInfo detects image info from the provided bytes.
+// A zero Info is a normal outcome and means there is insufficient data, not invalid data.
+// Callers should retry with more bytes if they need dimensions.
+// Some formats (for example JPEG) may require more bytes than any fixed prefix.
 func GetInfo(p []byte) (info Info) {
 	const minOffset = 80 // 1 pixel gif
 	if len(p) < minOffset {
